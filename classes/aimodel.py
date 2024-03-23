@@ -48,7 +48,7 @@ class AIModelService:
             # Now mark these as initialized so they don't run again
             AIModelService._base_initialized = True
 
-        self.priority_uids(self.metagraph)
+        # self.priority_uids(self.metagraph)
         self.p = inflect.engine()
         self.vcdnp = self.config.vcdnp
         self.max_mse = self.config.max_mse
