@@ -107,7 +107,7 @@ class TextToSpeechService(AIModelService):
             self.metagraph.sync(subtensor=self.subtensor)
             bt.logging.info(f"🔄 Syncing metagraph with subtensor.")
         
-        uids = self.metagraph.uids.tolist()
+        # uids = self.metagraph.uids.tolist()
         # # If there are more uids than scores, add more weights.
         # if len(uids) > len(self.scores):
         #     bt.logging.trace("Adding more weights")
