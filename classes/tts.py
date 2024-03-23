@@ -133,7 +133,7 @@ class TextToSpeechService(AIModelService):
                     self.last_reset_weights_block = self.current_block        
                     # set all nodes without ips set to 0
                     self.scores = self.scores * torch.Tensor([self.metagraph.neurons[uid].axon_info.ip != '0.0.0.0' for uid in self.metagraph.uids])
-                    
+
     def query_network(self,filtered_axons, prompt):
         # Network querying logic
         
@@ -346,7 +346,7 @@ class TextToSpeechService(AIModelService):
         bt.logging.debug("uint_uids", uint_uids)
 
         # Set the weights on chain via our subtensor connection.
-        result, msg = self.subtensor.set_weights(
+        result = self.subtensor.set_weights(
             wallet=self.wallet,
             netuid=self.config.netuid,
             uids=uint_uids,
@@ -358,4 +358,4 @@ class TextToSpeechService(AIModelService):
         if result is True:
             bt.logging.info("set_weights on chain successfully!")
         else:
-            bt.logging.error("set_weights failed", msg)
+            bt.logging.error("set_weights failed",)
