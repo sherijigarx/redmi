@@ -20,22 +20,38 @@ import psutil
 import GPUtil
 import subprocess
 from huggingface_hub import hf_hub_download
+from lib  import __spec_version__ as version
+import inflect
 
 class AIModelService:
     _scores = None
+    _base_initialized = False  # New class-level flag
+    version: int = version
 
     def __init__(self):
         self.config = self.get_config()
         self.sys_info = self.get_system_info()
         self.setup_paths()
         self.setup_logging()
-        self.setup_wallet()
-        self.setup_subtensor()
-        self.setup_dendrite()
-        self.setup_metagraph()
+        self.wallet = bt.wallet(config=self.config)
+        self.subtensor = bt.subtensor(config=self.config)
+        self.dendrite = bt.dendrite(wallet=self.wallet)
+        self.metagraph = self.subtensor.metagraph(self.config.netuid)
+
+        if not AIModelService._base_initialized:
+            # Perform actions that should only happen once
+            bt.logging.info(f"Wallet: {self.wallet}")
+            bt.logging.info(f"Subtensor: {self.subtensor}")
+            bt.logging.info(f"Dendrite: {self.dendrite}")
+            bt.logging.info(f"Metagraph: {self.metagraph}")
+
+            # Now mark these as initialized so they don't run again
+            AIModelService._base_initialized = True
+
+        self.priority_uids(self.metagraph)
+        self.p = inflect.engine()
         self.vcdnp = self.config.vcdnp
         self.max_mse = self.config.max_mse
-        self.pt_file = hf_hub_download(repo_id="lukewys/laion_clap", filename="630k-best.pt")
         if AIModelService._scores is None:
             AIModelService._scores = self.metagraph.E.clone().detach()
         self.scores = AIModelService._scores
@@ -106,27 +122,6 @@ class AIModelService:
             os.makedirs(self.config.full_path, exist_ok=True)
 
         bt.logging(self.config, logging_dir=self.config.full_path)
-
-    def setup_wallet(self):
-        # Initialize the wallet with the provided configuration
-        self.wallet = bt.wallet(config=self.config)
-        bt.logging.info(f"Wallet: {self.wallet}")
-
-
-    def setup_subtensor(self):
-    # Initialize the subtensor connection with the provided configuration
-        self.subtensor = bt.subtensor(config=self.config)
-        bt.logging.info(f"Subtensor: {self.subtensor}")
-
-    def setup_dendrite(self):
-        # Initialize the dendrite (RPC client) with the wallet
-        self.dendrite = bt.dendrite(wallet=self.wallet)
-        bt.logging.info(f"Dendrite: {self.dendrite}")
-
-    def setup_metagraph(self):
-        # Initialize the metagraph for the network state
-        self.metagraph = self.subtensor.metagraph(self.config.netuid)
-        bt.logging.info(f"Metagraph: {self.metagraph}")
 
     def update_score(self, axon, new_score, service, ax):
             try:
