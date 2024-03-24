@@ -17,6 +17,7 @@ import sys
 import wandb
 import datetime as dt
 import numpy as np
+import subprocess
 # Set the project root path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 # Set the 'AudioSubnet' directory path
@@ -54,10 +55,17 @@ class TextToSpeechService(AIModelService):
         current_time = dt.datetime.now()
         time_diff = current_time - self.last_run_start_time
         # Check if 4 hours have passed since the last run start time
-        if time_diff.total_seconds() >= 4 * 3600:  # 4 hours * 3600 seconds/hour
+        if time_diff.total_seconds() >= 10 * 60:  #4 * 3600:  # 4 hours * 3600 seconds/hour
             self.last_run_start_time = current_time  # Update the last run start time to now
             if self.wandb_run:
                 wandb.finish()  # End the current run
+                # After ending the run, pkill the process
+                try:
+                    # Replace "process_name" with the actual name of your process
+                    subprocess.run(['pkill', '-9', 'wandb'], check=True)
+                    print("Process successfully terminated.")
+                except subprocess.CalledProcessError:
+                    print("Failed to terminate the process. It may not exist or permission might be denied.")
             self.new_wandb_run()  # Start a new run
 
     def new_wandb_run(self):
@@ -67,8 +75,8 @@ class TextToSpeechService(AIModelService):
         commit = self.get_git_commit_hash()
         self.wandb_run = wandb.init(
             name=name,
-            project="AudioSubnet_Valid",
-            entity="subnet16team",
+            project="subnet16",
+            entity="testingforsubnet16",
             config={
                 "uid": self.uid,
                 "hotkey": self.wallet.hotkey.ss58_address,
