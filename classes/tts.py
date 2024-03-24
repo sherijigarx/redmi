@@ -17,6 +17,7 @@ import sys
 import wandb
 import datetime as dt
 import numpy as np
+import time
 import subprocess
 # Set the project root path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -48,24 +49,33 @@ class TextToSpeechService(AIModelService):
         gs_dev = load_dataset("etechgrid/Prompts_for_Voice_cloning_and_TTS")
         self.prompts = gs_dev['train']['text']
         return self.prompts
-        
+    
+    def graceful_wandb_termination(self):
+        # Additional command to kill any lingering wandb processes, as last resort
+        try:
+            # Define the command to find and kill wandb processes
+            command = "ps aux | grep wandb | grep -v grep | awk '{print $2}' | xargs kill -9"
+            # Execute the command
+            subprocess.run(command, shell=True, check=True)
+            print("Forcibly terminated all lingering wandb processes.")
+        except subprocess.CalledProcessError:
+            print("An error occurred while terminating wandb processes.")
+        except Exception as e:
+            print(f"Unexpected error when trying to kill wandb processes: {e}")
         
     def check_and_update_wandb_run(self):
         # Calculate the time difference between now and the last run start time
         current_time = dt.datetime.now()
         time_diff = current_time - self.last_run_start_time
         # Check if 4 hours have passed since the last run start time
-        if time_diff.total_seconds() >= 10 * 60:  #4 * 3600:  # 4 hours * 3600 seconds/hour
+        if time_diff.total_seconds() >= 10 * 60: #4 * 3600:  # 4 hours * 3600 seconds/hour
             self.last_run_start_time = current_time  # Update the last run start time to now
             if self.wandb_run:
-                wandb.finish()  # End the current run
-                # After ending the run, pkill the process
-                try:
-                    # Replace "process_name" with the actual name of your process
-                    subprocess.run(['pkill', '-9', 'wandb'], check=True)
-                    print("Process successfully terminated.")
-                except subprocess.CalledProcessError:
-                    print("Failed to terminate the process. It may not exist or permission might be denied.")
+                wandb.finish()  # End the current run gracefully
+                # Add delay to allow wandb to finish up, e.g., 10 seconds
+                time.sleep(10)
+                # Attempt to gracefully terminate any lingering wandb processes
+                self.graceful_wandb_termination()
             self.new_wandb_run()  # Start a new run
 
     def new_wandb_run(self):
