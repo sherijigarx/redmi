@@ -4,17 +4,33 @@ import torchaudio.transforms as T
 import bittensor as bt
 from lib.reward import score
 import math
-
+import numpy as np
+from torchaudio.transforms import Vad
 
 class CloneScore:
     def __init__(self, n_mels=128):
         self.n_mels = n_mels
+        self.vad = Vad(sample_rate=16000)  # Voice Activity Detection for trimming silence
+
+    def trim_silence(self, waveform, sample_rate):
+        # Assuming the audio is mono for simplicity; adjust or expand as needed for your use case
+        if waveform.shape[0] > 1:
+            waveform = torch.mean(waveform, dim=0, keepdim=True)
+        trimmed_waveform = self.vad(waveform)
+        return trimmed_waveform
 
     def extract_mel_spectrogram(self, file_path):
         waveform, sample_rate = torchaudio.load(file_path)
+        # Trim silence from the waveform
+        waveform = self.trim_silence(waveform, sample_rate)
         mel_spectrogram_transform = T.MelSpectrogram(sample_rate=sample_rate, n_mels=self.n_mels)
         mel_spectrogram = mel_spectrogram_transform(waveform)
-        return mel_spectrogram
+        # Convert power spectrogram to dB units and normalize
+        db_transform = T.AmplitudeToDB()
+        mel_spectrogram_db = db_transform(mel_spectrogram)
+        norm_spectrogram = (mel_spectrogram_db - mel_spectrogram_db.mean()) / mel_spectrogram_db.std()
+        return norm_spectrogram
+    
 
     def pad_or_trim_to_same_length(self, spec1, spec2):
         if spec1.size(2) > spec2.size(2):
@@ -28,32 +44,11 @@ class CloneScore:
     def calculate_mse(self, spec1, spec2):
         return torch.mean((spec1 - spec2) ** 2)
 
+    def calculate_decay_score(self, mse_score, decay_rate):
+        decay_score = math.exp(-decay_rate * mse_score)
+        return decay_score
 
-    def calculate_adjusted_mse(self, mse_score, MaxMSE):
-        """
-        Calculate adjusted MSE based on mse_score and MaxMSE.
-
-        Parameters:
-        mse_score (float): The Mean Squared Error score.
-        MaxMSE (float): The maximum acceptable Mean Squared Error.
-
-        Returns:
-        float: The adjusted MSE value.
-        """
-        try:
-            if mse_score < MaxMSE:
-                # Calculate adjusted_mse when mse_score is less than MaxMSE
-                adjusted_mse = 1 - math.log(1 + mse_score) / math.log(1 + MaxMSE)
-            else:
-                # Set adjusted_mse to 0 when mse_score exceeds MaxMSE
-                adjusted_mse = 0
-        except Exception as e:
-            print(f"An error occurred during adjusting the MSE score: {e}")
-            adjusted_mse = None
-
-        return adjusted_mse
-
-    def compare_audio(self, file_path1, file_path2, input_text, max_mse):
+    def compare_audio(self, file_path1, file_path2, input_text, decay_rate):
         # Extract Mel Spectrograms
         try:
             print("Extracting Mel spectrograms...")
@@ -67,26 +62,31 @@ class CloneScore:
             spec1 = spec2 = None
 
         # Pad or Trim
-        spec1, spec2 = self.pad_or_trim_to_same_length(spec1, spec2)
+        if spec1 is not None and spec2 is not None:
+            spec1, spec2 = self.pad_or_trim_to_same_length(spec1, spec2)
 
-        # Calculate MSE
-        mse_score = self.calculate_mse(spec1, spec2).item()
-        bt.logging.info(f"MSE Score for Voice Cloning: {mse_score}")
+            # Calculate MSE
+            mse_score = self.calculate_mse(spec1, spec2).item()
+            bt.logging.info(f"MSE Score for Voice Cloning: {mse_score}")
+
+            # Calculate Decay Score based on MSE
+            decay_score = self.calculate_decay_score(mse_score, decay_rate)
+            bt.logging.info(f"Decay Score for Voice Cloning: {decay_score}")
+        else:
+            mse_score = float('inf')  # Assigning a default high value if spectrograms extraction failed
+            decay_score = 0
+
         try:
             nisqa_wer_score = score(file_path2, input_text)
         except Exception as e:
-            print(f"Error calculating NISQA score inside compare_audio function : {e}")
+            print(f"Error calculating NISQA score inside compare_audio function: {e}")
             nisqa_wer_score = 0
-        # Adjust MSE Score
-        adjusted_mse = self.calculate_adjusted_mse(mse_score, max_mse)
-        bt.logging.info(f"Adjusted MSE Score for Voice Cloning: {adjusted_mse}")
-        if mse_score > max_mse:
-            max_mse =  mse_score
-            adjusted_mse = 0
-        final_score = (adjusted_mse + nisqa_wer_score)/2
-        if nisqa_wer_score == 0:
-            final_score = 0
-        bt.logging.info(f"Final Score for Voice Cloning: {final_score}")
-        
-        return final_score, max_mse
 
+        # Calculate Final Score considering Decay Score and NISQA score
+        if nisqa_wer_score == 0 or decay_score == 0:
+            final_score = 0
+        else:
+            final_score = (decay_score + nisqa_wer_score) / 2
+        bt.logging.info(f"Final Score for Voice Cloning: {final_score}")
+
+        return final_score
