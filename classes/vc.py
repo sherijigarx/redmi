@@ -40,7 +40,7 @@ class VoiceCloningService(AIModelService):
         self.minimum_dendrites_per_query = 5  # Example value, adjust as needed
         self.combinations = []
         self.lock = asyncio.Lock()
-        self.best_uid = self.priority_uids(self.metagraph)
+        # self.best_uid = self.priority_uids(self.metagraph)
         self.filtered_axon = []
         self.filtered_axons = []
         self.responses = None
