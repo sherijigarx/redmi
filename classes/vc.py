@@ -80,7 +80,7 @@ class VoiceCloningService(AIModelService):
         try:
             c_prompt = get_VC()
         except Exception as e:
-            bt.logging.error(f"An error occurred while fetching prompt: {e}")
+            # bt.logging.error(f"An error occurred while fetching prompt: {e}")
             c_prompt = None
         bt.logging.info(f"----------------------------The current step ------------------------------: {step}")
         if step % 150 == 0:
@@ -112,9 +112,9 @@ class VoiceCloningService(AIModelService):
 
     async def main_loop_logic(self, step):
         # Sync and update weights logic
-        if step % 10 == 0:
-            self.metagraph.sync(subtensor=self.subtensor)
-            self.best_uid = self.priority_uids(self.metagraph)
+        # if step % 10 == 0:
+        #     self.metagraph.sync(subtensor=self.subtensor)
+        #     self.best_uid = self.priority_uids(self.metagraph)
 
         tasks = []
         try:
