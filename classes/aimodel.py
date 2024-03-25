@@ -23,6 +23,7 @@ import GPUtil
 import subprocess
 from huggingface_hub import hf_hub_download
 from lib import __spec_version__ as spec_version
+from classes.corcel_prompt import CorcelAPI
 
 class AIModelService:
     _scores = None
@@ -48,7 +49,7 @@ class AIModelService:
 
             # Now mark these as initialized so they don't run again
             AIModelService._base_initialized = True
-
+        self.api = CorcelAPI()
         self.priority_uids(self.metagraph)
         self.p = inflect.engine()
         self.vcdnp = self.config.vcdnp

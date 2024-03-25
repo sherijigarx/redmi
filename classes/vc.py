@@ -17,7 +17,6 @@ import lib.protocol
 from lib.protocol import VoiceClone
 from lib.clone_score import CloneScore
 from classes.aimodel import AIModelService
-# from classes.corcel_prompt import get_VC
 import wandb
 import numpy as np
 
@@ -78,9 +77,9 @@ class VoiceCloningService(AIModelService):
 
     async def process_huggingface_prompts(self, step):
         try:
-            c_prompt = get_VC()
+            c_prompt = self.api.get_VC()
         except Exception as e:
-            # bt.logging.error(f"An error occurred while fetching prompt: {e}")
+            bt.logging.error(f"An error occurred while fetching prompt: {e}")
             c_prompt = None
         if step % 300 == 0:
             async with self.lock:

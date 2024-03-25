@@ -41,7 +41,6 @@ class TextToSpeechService(AIModelService):
         self.tao = self.metagraph.neurons[self.uid].stake.tao
         self.combinations = []
         self.lock = asyncio.Lock()
-        self.response = None
         
     def load_prompts(self):
         gs_dev = load_dataset("etechgrid/Prompts_for_Voice_cloning_and_TTS")
@@ -67,8 +66,8 @@ class TextToSpeechService(AIModelService):
         commit = self.get_git_commit_hash()
         self.wandb_run = wandb.init(
             name=name,
-            project="subnet16",
-            entity="testingforsubnet16",
+            project="AudioSubnet_Valid",
+            entity="subnet16team",
             config={
                 "uid": self.uid,
                 "hotkey": self.wallet.hotkey.ss58_address,
@@ -102,21 +101,37 @@ class TextToSpeechService(AIModelService):
                 traceback.print_exc()
 
     async def main_loop_logic(self, step):
+        g_prompt = None
+        try:
+            c_prompt = self.api.get_TTS()
+        except Exception as e:
+            bt.logging.error(f"An error occurred while fetching prompt: {e}")
+            c_prompt = None
         # Sync and update weights logic
         if step % 10 == 0:
             self.metagraph.sync(subtensor=self.subtensor)
             bt.logging.info(f"🔄 Syncing metagraph with subtensor.")
         
-        g_prompts = self.load_prompts()
-        g_prompt = random.choice(g_prompts)
-        while len(g_prompt) > 256:
-            bt.logging.error(f'The length of current Prompt is greater than 256. Skipping current prompt.')
-            g_prompt = random.choice(g_prompts)
-        if step % 20 == 0:
+        if step % 5 == 0:
             async with self.lock:
+                # Use the API prompt if available; otherwise, load prompts from HuggingFace
+                if c_prompt:
+                    bt.logging.info(f"--------------------------------- Prompt are being used from Corcel API for Text-To-Speech at Step: {step} --------------------------------- ")
+                    g_prompt = self.convert_numeric_values(c_prompt)  # Use the prompt from the API
+                else:
+                    # Fetch prompts from HuggingFace if API failed
+                    bt.logging.info(f"--------------------------------- Prompt are being used from HuggingFace Dataset for Text-To-Speech at Step: {step} --------------------------------- ")
+                    g_prompts = self.load_prompts()
+                    g_prompt = random.choice(g_prompts)  # Choose a random prompt from HuggingFace
+                    g_prompt = self.convert_numeric_values(g_prompt)
+
+                while len(g_prompt) > 256:
+                    bt.logging.error(f'The length of current Prompt is greater than 256. Skipping current prompt.')
+                    g_prompt = random.choice(g_prompts)
+                    g_prompt = self.convert_numeric_values(g_prompt)
+
                 filtered_axons = self.get_filtered_axons_from_combinations()
-                bt.logging.info(f"Prompt are being used from HuggingFace Dataset for TTS at Step: {step}")
-                bt.logging.info(f"______________Prompt______________: {g_prompt}")
+                bt.logging.info(f"______________TTS-Prompt______________: {g_prompt}")
                 responses = self.query_network(filtered_axons, g_prompt)
                 self.process_responses(filtered_axons, responses, g_prompt)
 
@@ -153,7 +168,6 @@ class TextToSpeechService(AIModelService):
     def process_responses(self,filtered_axons, responses, prompt):
         for axon, response in zip(filtered_axons, responses):
             if response is not None and isinstance(response, lib.protocol.TextToSpeech):
-                self.response = response
                 self.process_response(axon, response, prompt)
         
         bt.logging.info(f"Scores after update in TTS: {self.scores}")
@@ -208,7 +222,7 @@ class TextToSpeechService(AIModelService):
             print(f"Saved audio file to {output_path}")
             try:
                 uid_in_metagraph = self.metagraph.hotkeys.index(axon.hotkey)
-                wandb.log({f"Text to Speech prompt:{self.response.text_input} ": wandb.Audio(np.array(audio_data_int_), caption=f'For HotKey: {axon.hotkey[:10]} and uid {uid_in_metagraph}', sample_rate=sampling_rate)})
+                wandb.log({f"Text to Speech prompt:{prompt} ": wandb.Audio(np.array(audio_data_int_), caption=f'For HotKey: {axon.hotkey[:10]} and uid {uid_in_metagraph}', sample_rate=sampling_rate)})
                 bt.logging.success(f"TTS Audio file uploaded to wandb successfully for Hotkey {axon.hotkey}")
             except Exception as e:
                 bt.logging.error(f"Error uploading TTS audio to wandb for Hotkey {axon.hotkey}: {e}")
@@ -216,6 +230,7 @@ class TextToSpeechService(AIModelService):
             score = self.score_output(output_path, prompt)
             bt.logging.info(f"Aggregated Score from the NISQA and WER Metric: {score}")
             self.update_score(axon, score, service="Text-To-Speech", ax=self.filtered_axon)
+            # return output_path
 
         except Exception as e:
             bt.logging.error(f"Error processing speech output: {e}")
@@ -308,46 +323,38 @@ class TextToSpeechService(AIModelService):
                 scores[idx] = 0.0
                 bt.logging.info(f"Blacklisted miner detected: {uid}. Score set to 0.")
 
-        # Normalize scores to get weights        
-        raw_weights = torch.nn.functional.normalize(self.scores, p=1, dim=0)
+        # Normalize scores to get weights
+        weights = torch.nn.functional.normalize(scores, p=1, dim=0)
+        bt.logging.info(f"Setting weights: {weights}")
 
-        bt.logging.debug("raw_weights", raw_weights)
-        bt.logging.debug("raw_weight_uids", self.metagraph.uids.to("cpu"))
-        # Process the raw weights to final_weights via subtensor limitations.
-        (
-            processed_weight_uids,
-            processed_weights,
-        ) = bt.utils.weight_utils.process_weights_for_netuid(
-            uids=self.metagraph.uids.to("cpu"),
-            weights=raw_weights.to("cpu"),
-            netuid=self.config.netuid,
-            subtensor=self.subtensor,
-            metagraph=self.metagraph,
-        )
-        bt.logging.debug("processed_weights", processed_weights)
-        bt.logging.debug("processed_weight_uids", processed_weight_uids)
+        # Process weights for the subnet
+        try:
+            processed_uids, processed_weights = bt.utils.weight_utils.process_weights_for_netuid(
+                uids=self.metagraph.uids,
+                weights=weights,
+                netuid=self.config.netuid,
+                subtensor=self.subtensor
+            )
+            bt.logging.info(f"Processed weights: {processed_weights}")
+            bt.logging.info(f"Processed uids: {processed_uids}")
+        except Exception as e:
+            bt.logging.error(f"An error occurred While processing the weights: {e}")
 
-        # Convert to uint16 weights and uids.
-        (
-            uint_uids,
-            uint_weights,
-        ) = bt.utils.weight_utils.convert_weights_and_uids_for_emit(
-            uids=processed_weight_uids, weights=processed_weights
-        )
-        bt.logging.debug("uint_weights", uint_weights)
-        bt.logging.debug("uint_uids", uint_uids)
+        try:
+            # Set weights on the Bittensor network
+            result = self.subtensor.set_weights(
+                netuid=self.config.netuid,  # Subnet to set weights on
+                wallet=self.wallet,         # Wallet to sign set weights using hotkey
+                uids=processed_uids,        # Uids of the miners to set weights for
+                weights=processed_weights, # Weights to set for the miners
+                wait_for_finalization=True,
+                version_key=self.version,
+            )
 
-        # Set the weights on chain via our subtensor connection.
-        result = self.subtensor.set_weights(
-            wallet=self.wallet,
-            netuid=self.config.netuid,
-            uids=uint_uids,
-            weights=uint_weights,
-            wait_for_finalization=False,
-            wait_for_inclusion=False,
-            # version_key=self.version,
-        )
-        if result is True:
-            bt.logging.info("set_weights on chain successfully!")
-        else:
-            bt.logging.error("set_weights failed",)
+            if result:
+                bt.logging.success(f'Successfully set weights. result: {result}')
+                bt.logging.info(f'META GRPAH: {self.metagraph.E.numpy()}')
+            else:
+                bt.logging.error('Failed to set weights.')
+        except Exception as e:
+            bt.logging.error(f"An error occurred while setting weights: {e}")
