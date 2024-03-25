@@ -7,13 +7,12 @@ class CorcelAPI:
         self.base_url = "https://api.corcel.io/v1/text/cortext/chat"
         try:
             self.api_key = os.environ.get('CORCEL_API_KEY')
+            if self.api_key is None:
+                bt.logging.info(f"Corcel API is: {self.api_key}")
+                bt.logging.error("Corcel API key not found.")
         except Exception as e:
             bt.logging.error(f"Error getting Corcel API key due to: {e}")
             self.api_key = None
-        if self.api_key is None:
-            bt.logging.info(f"Corcel API is: {self.api_key}")
-            bt.logging.error("Corcel API key not found.")
-            pass
         self.headers = {
             "Authorization": self.api_key,
             "accept": "application/json",
