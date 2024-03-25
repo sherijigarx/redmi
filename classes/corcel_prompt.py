@@ -6,7 +6,6 @@ class CorcelAPI:
     def __init__(self):
         self.base_url = "https://api.corcel.io/v1/text/cortext/chat"
         self.api_key = os.getenv('API_KEY')
-        bt.logging.info(f" ---------------------------------- API_KEY ---------------------------------- : {self.api_key}")
         if self.api_key is None:
             raise Exception("Please set the API_KEY environment variable")
         self.headers = {
@@ -29,7 +28,7 @@ class CorcelAPI:
     
     def get_TTS(self):
         data = {
-            "messages": [{"role": "user", "content": "random meaningful text phrase in less than 32 words"}],
+            "messages": [{"role": "user", "content": "Based on all the books, articles, documents or dataset you have, give me 5 random and unique different sentences no more than 32 words. It could have a minimum of 27 words, but not more than 32 words. Use only letters and not numbers in the sentences. If we have numbers, convert it to letters. Each sentences should not have more than 10% of the words in common with each other."}],
             "miners_to_query": 3,
             "top_k_miners_to_query": 40,
             "ensure_responses": True,
@@ -40,7 +39,7 @@ class CorcelAPI:
     
     def get_VC(self):
         data = {
-            "messages": [{"role": "user", "content": "random meaningful text phrase in less than 32 words"}],
+            "messages": [{"role": "user", "content": "Based on all the books, articles, documents or dataset you have, give me 5 random and unique different sentences no more than 32 words. It could have a minimum of 27 words, but not more than 32 words. Use only letters and not numbers in the sentences. If we have numbers, convert it to letters. Each sentences should not have more than 10% of the words in common with each other."}],
             "miners_to_query": 3,
             "top_k_miners_to_query": 40,
             "ensure_responses": True,
