@@ -8,6 +8,11 @@ Validators initiate the audio generation process by providing prompts to the Min
 ## Installation
 Follow these steps to install the necessary components:
 
+**Export Corcel API key**
+```bash
+echo "export CORCEL_API_KEY=XXXXXXXXXXXXXXX">>~/.bashrc && source ~/.bashrc
+```
+
 **Set Conda Enviornment**
 ```bash
 mkdir -p ~/miniconda3
