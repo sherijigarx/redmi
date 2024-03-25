@@ -118,6 +118,7 @@ class TextToSpeechService(AIModelService):
                 if c_prompt:
                     bt.logging.info(f"--------------------------------- Prompt are being used from Corcel API for Text-To-Speech at Step: {step} --------------------------------- ")
                     g_prompt = self.convert_numeric_values(c_prompt)  # Use the prompt from the API
+                    bt.logging.info(f"______________TTS-Prompt coming from Corcel______________: {g_prompt}")
                     if len(g_prompt) > 256:
                         pass
                 else:
