@@ -86,6 +86,8 @@ class VoiceCloningService(AIModelService):
                 if c_prompt:
                     bt.logging.info(f"--------------------------------- Prompt and voices are being used from Corcel API for Voice Clone at Step: {step} ---------------------------------")
                     self.text_input = self.convert_numeric_values(c_prompt)  # Use the prompt from the API
+                    if len(c_prompt) > 256:
+                        pass
                 else:
                     # Fetch prompts from HuggingFace if API failed
                     bt.logging.info(f"--------------------------------- Prompt and voices are being used from HuggingFace Dataset for Voice Clone at Step: {step} ---------------------------------")

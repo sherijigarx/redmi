@@ -83,6 +83,8 @@ class MusicGenerationService(AIModelService):
                 if c_prompt:
                     bt.logging.info(f"--------------------------------- Prompt are being used from Corcel API for Text-To-Music at Step: {step} --------------------------------- ")
                     g_prompt = self.convert_numeric_values(c_prompt)  # Use the prompt from the API
+                    if len(g_prompt) > 256:
+                        pass
                 else:
                     # Fetch prompts from HuggingFace if API failed
                     bt.logging.info(f"--------------------------------- Prompt are being used from HuggingFace Dataset for Text-To-Music at Step: {step} --------------------------------- ")
