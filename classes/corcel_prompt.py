@@ -7,7 +7,7 @@ class CorcelAPI:
         self.base_url = "https://api.corcel.io/v1/text/cortext/chat"
         self.api_key = os.getenv('API_KEY')
         if self.api_key is None:
-            raise Exception("Please set the API_KEY environment variable")
+            bt.logging.error("Please set the API_KEY environment variable")
         self.headers = {
             "Authorization": self.api_key,
             "accept": "application/json",
