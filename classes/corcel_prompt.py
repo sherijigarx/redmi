@@ -1,9 +1,11 @@
 import requests
 import bittensor as bt
 import os
+from dotenv import load_dotenv
 
 class CorcelAPI:
     def __init__(self):
+        load_dotenv()
         self.base_url = "https://api.corcel.io/v1/text/cortext/chat"
         self.api_key = os.getenv('API_KEY')
         if self.api_key is None:
