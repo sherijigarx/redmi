@@ -5,7 +5,7 @@ import os
 class CorcelAPI:
     def __init__(self):
         self.base_url = "https://api.corcel.io/v1/text/cortext/chat"
-        self.api_key = os.environ.get['CORCEL_API_KEY']
+        self.api_key = os.environ.get('CORCEL_API_KEY')
         if self.api_key is None:
             bt.logging.info(f"Corcel API is: {self.api_key}")
             bt.logging.error("Corcel API key not found.")
