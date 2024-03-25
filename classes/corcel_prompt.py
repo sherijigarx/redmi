@@ -1,10 +1,12 @@
 import requests
+import bittensor as bt
 import os
 
 class CorcelAPI:
     def __init__(self):
         self.base_url = "https://api.corcel.io/v1/text/cortext/chat"
         self.api_key = os.getenv('API_KEY')
+        bt.logging.info(f" ---------------------------------- API_KEY ---------------------------------- : {self.api_key}")
         if self.api_key is None:
             raise Exception("Please set the API_KEY environment variable")
         self.headers = {
