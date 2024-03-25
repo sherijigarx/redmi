@@ -41,13 +41,11 @@ class AIModelService:
         self.metagraph = self.subtensor.metagraph(self.config.netuid)
 
         if not AIModelService._base_initialized:
-            # Perform actions that should only happen once
             bt.logging.info(f"Wallet: {self.wallet}")
             bt.logging.info(f"Subtensor: {self.subtensor}")
             bt.logging.info(f"Dendrite: {self.dendrite}")
             bt.logging.info(f"Metagraph: {self.metagraph}")
 
-            # Now mark these as initialized so they don't run again
             AIModelService._base_initialized = True
         self.api = CorcelAPI()
         self.priority_uids(self.metagraph)
@@ -62,8 +60,6 @@ class AIModelService:
 
     def get_config(self):
         parser = argparse.ArgumentParser()
-
-        # Add arguments as per your original script
         parser.add_argument("--alpha", default=0.75, type=float, help="The weight moving average scoring.")
         parser.add_argument("--custom", default="my_custom_value", help="Adds a custom value to the parser.")
         parser.add_argument("--netuid", type=int, default=16, help="The chain subnet uid.")
