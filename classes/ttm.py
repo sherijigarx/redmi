@@ -83,18 +83,16 @@ class MusicGenerationService(AIModelService):
                 if c_prompt:
                     bt.logging.info(f"--------------------------------- Prompt are being used from Corcel API for Text-To-Music at Step: {step} --------------------------------- ")
                     g_prompt = self.convert_numeric_values(c_prompt)  # Use the prompt from the API
-                    if len(g_prompt) > 256:
-                        pass
                 else:
                     # Fetch prompts from HuggingFace if API failed
                     bt.logging.info(f"--------------------------------- Prompt are being used from HuggingFace Dataset for Text-To-Music at Step: {step} --------------------------------- ")
-                    g_prompts = self.load_prompts()
-                    g_prompt = random.choice(g_prompts)  # Choose a random prompt from HuggingFace
+                    g_prompt = self.load_prompts()
+                    g_prompt = random.choice(g_prompt)  # Choose a random prompt from HuggingFace
                     g_prompt = self.convert_numeric_values(g_prompt)
 
                 while len(g_prompt) > 256:
                     bt.logging.error(f'The length of current Prompt is greater than 256. Skipping current prompt.')
-                    g_prompt = random.choice(g_prompts)
+                    g_prompt = random.choice(g_prompt)
                     g_prompt = self.convert_numeric_values(g_prompt)
 
                 filtered_axons = self.get_filtered_axons_from_combinations()
