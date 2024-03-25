@@ -85,6 +85,8 @@ class CloneScore:
         final_score = 0.4 * cosine_sim + 0.6 * nisqa_wer_score
         if cosine_sim == 0:
             final_score = -0.1  # Assigning a negative score for zero or negative cosine similarity
-        bt.logging.info(f"Final Score for Voice Cloning: {final_score}")
+        # bt.logging.info(f"Final Score for Voice Cloning: {final_score}")
+        bt.logging.info(f"Final Score: {final_score} and Cosine Similarity: {cosine_sim} for Voice Cloning: ")
+
 
         return final_score
