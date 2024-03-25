@@ -107,14 +107,6 @@ class TextToSpeechService(AIModelService):
             self.metagraph.sync(subtensor=self.subtensor)
             bt.logging.info(f"🔄 Syncing metagraph with subtensor.")
         
-        # uids = self.metagraph.uids.tolist()
-        # # If there are more uids than scores, add more weights.
-        # if len(uids) > len(self.scores):
-        #     bt.logging.trace("Adding more weights")
-        #     size_difference = len(uids) - len(self.scores)
-        #     new_scores = torch.zeros(size_difference, dtype=torch.float32)
-        #     self.scores = torch.cat((self.scores, new_scores))
-        #     del new_scores
         g_prompts = self.load_prompts()
         g_prompt = random.choice(g_prompts)
         while len(g_prompt) > 256:

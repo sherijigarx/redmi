@@ -82,7 +82,6 @@ class VoiceCloningService(AIModelService):
         except Exception as e:
             # bt.logging.error(f"An error occurred while fetching prompt: {e}")
             c_prompt = None
-        bt.logging.info(f"----------------------------The current step ------------------------------: {step}")
         if step % 150 == 0:
             async with self.lock:
                 if c_prompt:
@@ -111,11 +110,6 @@ class VoiceCloningService(AIModelService):
                 await self.generate_voice_clone(self.text_input, clone_input, sample_rate)
 
     async def main_loop_logic(self, step):
-        # Sync and update weights logic
-        # if step % 10 == 0:
-        #     self.metagraph.sync(subtensor=self.subtensor)
-        #     self.best_uid = self.priority_uids(self.metagraph)
-
         tasks = []
         try:
             huggingface_task = asyncio.create_task(self.process_huggingface_prompts(step))
