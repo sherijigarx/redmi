@@ -33,14 +33,14 @@ class AIModelService:
     def __init__(self):
         self.config = self.get_config()
         self.sys_info = self.get_system_info()
+        self.setup_paths()
+        self.setup_logging()
         self.wallet = bt.wallet(config=self.config)
         self.subtensor = bt.subtensor(config=self.config)
         self.dendrite = bt.dendrite(wallet=self.wallet)
         self.metagraph = self.subtensor.metagraph(self.config.netuid)
 
         if not AIModelService._base_initialized:
-            self.setup_paths()
-            self.setup_logging()
             # Perform actions that should only happen once
             bt.logging.info(f"Wallet: {self.wallet}")
             bt.logging.info(f"Subtensor: {self.subtensor}")
