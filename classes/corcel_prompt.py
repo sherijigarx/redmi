@@ -28,7 +28,7 @@ class CorcelAPI:
     
     def get_TTS(self):
         data = {
-            "messages": [{"role": "user", "content": "Based on all the books, articles, documents or dataset you have, give me 5 random and unique different sentences less than 256 characters. It could have a minimum of 27 words, but not more than 256 characters. Use only letters and not numbers in the sentences. If we have numbers, convert it to letters. Each sentences should not have more than 10% of the words in common with each other."}],
+            "messages": [{"role": "user", "content": "Based on all the books, articles, documents or dataset you have, give me 5 random and unique different sentences less than 200 characters. It could have a minimum of 27 words, but not more than 200 characters. Use only letters and not numbers in the sentences. If we have numbers, convert it to letters. Each sentences should not have more than 10% of the words in common with each other."}],
             "miners_to_query": 3,
             "top_k_miners_to_query": 40,
             "ensure_responses": True,
@@ -39,7 +39,7 @@ class CorcelAPI:
     
     def get_VC(self):
         data = {
-            "messages": [{"role": "user", "content": "Based on all the books, articles, documents or dataset you have, give me 5 random and unique different sentences less than 256 characters. It could have a minimum of 27 words, but not more than 256 characters. Use only letters and not numbers in the sentences. If we have numbers, convert it to letters. Each sentences should not have more than 10% of the words in common with each other."}],
+            "messages": [{"role": "user", "content": "Based on all the books, articles, documents or dataset you have, give me 5 random and unique different sentences less than 200 characters. It could have a minimum of 27 words, but not more than 200 characters. Use only letters and not numbers in the sentences. If we have numbers, convert it to letters. Each sentences should not have more than 10% of the words in common with each other."}],
             "miners_to_query": 3,
             "top_k_miners_to_query": 40,
             "ensure_responses": True,
